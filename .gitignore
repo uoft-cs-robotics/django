@@ -17,4 +17,4 @@
 *.ply
 *.bag
 *.pcd 
-
+!atom_src/rviz/
