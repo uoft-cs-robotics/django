@@ -18,8 +18,9 @@ services:
     privileged: true
     devices:
     - /dev:/dev
-    runtime: nvidia
     volumes:
-      # - ../../calibration:/root/git/calibration
-      - ../src:/root/jango_ws/src/
+      - ../jango_src:/root/jango_ws/src/
+      - ../atom_src:/root/atom_ws/src/      
+      - ../bags:/root/bags
+      - ../datasets:/root/datasets
 
