@@ -1,0 +1,3 @@
+[submodule "atom_src/atom"]
+	path = atom_src/atom
+	url = https://github.com/Ruthrash/atom
