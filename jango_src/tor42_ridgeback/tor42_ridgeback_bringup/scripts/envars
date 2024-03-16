@@ -1,0 +1,11 @@
+#!/bin/bash
+
+export RIDGEBACK_RISER_HEIGHT=0.07
+
+export RIDGEBACK_LEFT_KINOVA_XYZ="0.0 0.0264 0.1914"
+export RIDGEBACK_LEFT_KINOVA_RPY="-1.5708 0 0"
+
+export RIDGEBACK_RIGHT_KINOVA_XYZ="0.0 -0.0264 0.1914"
+export RIDGEBACK_RIGHT_KINOVA_RPY="1.5708 0 0"
+
+export RIDGEBACK_URDF_EXTRAS=$(catkin_find tor42_ridgeback_description urdf/tor42_ridgeback.urdf.xacro --first-only)

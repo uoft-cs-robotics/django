@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<package>
+	<name>tor42_ridgeback_description</name>
+	<version>0.0.0</version>
+	<description>Repository for the tor42 Ridgeback.</description>
+	<maintainer email="code@clearpathrobotics.com">Clearpath Team</maintainer>
+	<license>BSD</license>
+	<buildtool_depend>catkin</buildtool_depend>
+
+	<run_depend>ridgeback_description</run_depend>
+</package>

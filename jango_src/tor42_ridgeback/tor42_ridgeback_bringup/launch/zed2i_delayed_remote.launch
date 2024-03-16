@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<launch>
+  <node pkg="launch_delay" type="launch_delay"
+    args="15 tor42_ridgeback_bringup zed2i_remote.launch"
+    name="zed2i_delayed_remote" output="screen"
+    launch-prefix="$(find tor42_ridgeback_bringup)/scripts/check_secondary.bash"/>
+</launch>
+
+

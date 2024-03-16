@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+
+<!--
+This launch file starts the customized Kinova Gen 3 arm drivers and the drivers for the
+gripper-mounted cameras.
+-->
+
+<launch>
+  <include file="$(find tor42_ridgeback_bringup)/launch/ridgeback_dual_gen3_bringup.launch" />
+  <include file="$(find tor42_ridgeback_bringup)/launch/left_kinova_vision_rgbd.launch" />
+  <include file="$(find tor42_ridgeback_bringup)/launch/right_kinova_vision_rgbd.launch" />
+</launch>

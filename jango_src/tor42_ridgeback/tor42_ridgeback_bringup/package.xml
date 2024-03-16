@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<package>
+	<name>tor42_ridgeback_bringup</name>
+	<version>0.0.0</version>
+	<description>A repository for the tor42_ridgeback_bringup</description>
+	<maintainer email="lcamero@clearpathrobotics.com">Luis Camero</maintainer>
+	<license>BSD</license>
+	<buildtool_depend>catkin</buildtool_depend>
+</package>
+
+

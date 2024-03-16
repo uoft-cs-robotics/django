@@ -1,0 +1,204 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+
+  <material name="grey">
+    <color rgba="0.5 0.5 0.5 1"/>
+  </material>
+
+<!-- Link for the rear auxiliary plate mesh -->
+  <link name="rear_plate_base_link">
+    <visual>
+      <geometry>
+        <mesh filename="package://tor42_ridgeback_description/meshes/aux_plate_200.dae"/>
+      </geometry>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.38 0.79 0.212"/>
+      </geometry>
+      <origin rpy="0 0 0" xyz="-0.19 0 0.106"/>
+    </collision>
+  </link>
+
+  <joint name="rear_plate_base_joint" type="fixed">
+    <parent link="mid_mount"/>
+    <child link="rear_plate_base_link"/>
+    <origin xyz="-0.09 0.0 0.0" rpy="0 0 0" />
+  </joint>
+  
+<!-- Add a link to the aux plate for additional payloads -->  
+  <link name="rear_plate_link"/>
+
+  <joint name="rear_plate_joint" type="fixed">
+    <parent link="rear_plate_base_link" />
+    <child link="rear_plate_link" />
+    <origin xyz="-0.06 0.0 0.2126" rpy="0 0 0"/>
+  </joint>
+    
+<!-- Add the ewellix mounting flange -->
+  <link name="ewellix_mount_flange_link">
+    <visual>
+      <geometry>
+        <box size="0.2 0.2 0.015"/>
+      </geometry>
+      <material name="grey"/>
+      <origin rpy="0 0 0" xyz="0 0 0.0075"/>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.2 0.2 0.015"/>
+      </geometry>
+      <origin rpy="0 0 0" xyz="0 0 0.0075"/>
+    </collision>
+  </link>
+
+  <joint name="ewellix_mount_flange_joint" type="fixed">
+    <parent link="mid_mount"/>
+    <child link="ewellix_mount_flange_link"/>
+    <origin xyz="0.0 0.0 0.0" rpy="0 0 0" />
+  </joint>
+
+<!-- Add the Ewellix lift column xacro -->
+  <xacro:include filename="$(find ewellix_tlt)/urdf/ewellix_lift_500mm.urdf.xacro" />
+
+  <xacro:ewellix_lift_500mm prefix="" parent="ewellix_mount_flange_link" cut_model="1">
+    <origin xyz="0.0 0.0 0.015" rpy="0 0 0" />
+  </xacro:ewellix_lift_500mm>  
+
+<!-- Link for the dual Gen3 Manipulator Mount -->
+  <link name="dual_gen3_base_link">
+    <visual>
+      <geometry>
+        <mesh filename="package://tor42_ridgeback_description/meshes/dual_gen3_mount.dae"/>
+      </geometry>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.14 0.14 0.256"/>
+      </geometry>
+      <origin rpy="0 0 0" xyz="0 0 0.128"/>
+    </collision>
+  </link>
+
+  <joint name="dual_gen3_base_joint" type="fixed">
+    <parent link="ewellix_lift_top_link"/>
+    <child link="dual_gen3_base_link"/>
+    <origin xyz="0.0 0.0 0.0" rpy="0 0 0" />
+  </joint>
+  
+<!-- Add a link to the top of the dual gen3 mount for additional payloads -->  
+  <link name="gen3_plate_link"/>
+
+  <joint name="gen3_plate_joint" type="fixed">
+    <parent link="dual_gen3_base_link" />
+    <child link="gen3_plate_link" />
+    <origin xyz="0.0 0.0 0.256" rpy="0 0 0"/>
+  </joint>
+  
+<!-- Add the Gen3 Manipulators. Their position may be defined by environment variables -->
+
+  <xacro:arg name="arm" default="gen3" />
+  <xacro:arg name="dof" default="7" />
+  <xacro:arg name="vision" default="true" />
+
+  <xacro:arg name="gripper" default="robotiq_2f_85" />
+
+  <xacro:arg name="sim" default="false" />
+  <xacro:arg name="left_prefix" default="left_kinova_arm_" />
+  <xacro:arg name="right_prefix" default="right_kinova_arm_" />
+
+  <xacro:include filename="$(find kortex_description)/robots/kortex_robot.xacro" />
+  <xacro:load_robot arm="$(arg arm)" gripper="$(arg gripper)" dof="$(arg dof)" vision="$(arg vision)" sim="$(arg sim)" prefix="$(arg left_prefix)" />
+  <xacro:load_robot arm="$(arg arm)" gripper="$(arg gripper)" dof="$(arg dof)" vision="$(arg vision)" sim="$(arg sim)" prefix="$(arg right_prefix)" />
+
+  <joint name="left_arm_mount_joint" type="fixed">
+    <origin xyz="$(optenv RIDGEBACK_LEFT_KINOVA_XYZ 0.0 0.0264 0.1914)" rpy="$(optenv RIDGEBACK_LEFT_KINOVA_RPY -1.5708 0 0)"/>
+    <parent link="dual_gen3_base_link" />
+    <child link="left_kinova_arm_base_link" />
+  </joint>
+
+  <joint name="right_arm_mount_joint" type="fixed">
+    <origin xyz="$(optenv RIDGEBACK_RIGHT_KINOVA_XYZ 0.0 -0.0264 0.1914)" rpy="$(optenv RIDGEBACK_RIGHT_KINOVA_RPY 1.5708 0 0)"/>
+    <parent link="dual_gen3_base_link" />
+    <child link="right_kinova_arm_base_link" />
+  </joint>
+
+<!-- Add the camera tilt head macro to the top of the lift kit -->
+
+<xacro:include filename="$(find fath_pivot_mount_description)/urdf/f80.urdf.xacro" />
+<xacro:f80_mount prefix="lift_top" parent_link="gen3_plate_link" tilt="0.0" pan="0.0">
+  <origin xyz="0 0 0" rpy="0 0 0" />
+</xacro:f80_mount>
+
+<!-- Attach the LIDAR & camera mount plate to the tripod head -->
+
+  <link name="lidar_cam_link">
+    <visual>
+      <geometry>
+        <mesh filename="package://tor42_ridgeback_description/meshes/lidar_cam_plate.dae"/>
+      </geometry>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.21 0.19 0.036"/>
+      </geometry>
+      <origin rpy="0 0 0" xyz="0.0 0.0 0.018"/>
+    </collision>
+  </link>
+
+  <joint name="lidar_cam_joint" type="fixed">
+    <parent link="lift_top_mount" />
+    <child link="lidar_cam_link" />
+    <origin xyz="-0.01 0.0 0.0" rpy="0 0 0"/>
+  </joint>
+
+
+
+<!-- Create a link for the forward camera mount hole -->
+  <link name="front_cam_link" />
+  <joint name="front_cam_joint" type="fixed">
+    <parent link="lidar_cam_link" />
+    <child link="front_cam_link" />
+    <origin xyz="0.09 0 0.0063" rpy="0 0 0" />
+  </joint>
+
+<!-- Create a link for the left camera mount hole -->
+  <link name="left_cam_link" />
+  <joint name="left_cam_joint" type="fixed">
+    <parent link="lidar_cam_link" />
+    <child link="left_cam_link" />
+    <origin xyz="-0.017 0.08 0.0063" rpy="0 0 1.5708" />
+  </joint>
+
+<!-- Create a link for the right camera mount hole -->
+  <link name="right_cam_link" />
+  <joint name="right_cam_joint" type="fixed">
+    <parent link="lidar_cam_link" />
+    <child link="right_cam_link" />
+    <origin xyz="-0.017 -0.08 0.0063" rpy="0 0 -1.5708" />
+  </joint>
+  
+<!-- Attach the Ouster -->
+
+  <xacro:include filename="$(find ouster_description)/urdf/OS1-64.urdf.xacro" />
+  <xacro:OS1-64 parent="lidar_cam_link">
+    <origin xyz="0 0 0.036" rpy="0 0 0" />
+  </xacro:OS1-64>
+
+<!-- Use the ZED macro to create a ZED2 camera URDF -->
+
+  <xacro:include filename="$(find zed_wrapper)/urdf/zed_macro.urdf.xacro" />
+  <xacro:zed_camera name="zed2i" model="zed2i" parent="front_cam_link">
+    <origin xyz="0 0 0" rpy="0 0 0" />
+  </xacro:zed_camera>
+ 
+<!-- Need to also create the parent base link for the camera 
+  <link name="front_zed_link" />
+ 
+  <joint name="zed_mount_joint" type="fixed">
+    <parent link="front_cam_link" />
+    <child link="front_zed_link" />
+    <origin xyz="0 0 0" rpy="0 0 0" />
+  </joint>
+-->
+</robot>

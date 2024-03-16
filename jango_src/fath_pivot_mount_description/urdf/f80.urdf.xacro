@@ -1,0 +1,55 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://wiki.ros.org/xacro">
+  <xacro:macro name="f80_mount" params="parent_link prefix tilt pan *origin">
+    <link name="${prefix}_base_link">
+      <visual>
+        <geometry>
+          <mesh filename="package://fath_pivot_mount_description/meshes/f80_base.dae" />
+        </geometry>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+      </visual>
+      <collision>
+        <geometry>
+          <box size="0.095 0.075 0.082" />
+        </geometry>
+        <origin xyz="-0.015 0 0.041" rpy="0 0 0" />
+      </collision>
+    </link>
+
+    <link name="${prefix}_hinge_link">
+      <visual>
+        <geometry>
+          <mesh filename="package://fath_pivot_mount_description/meshes/f80_top.dae" />
+        </geometry>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+      </visual>
+      <collision>
+        <geometry>
+          <box size="0.11 0.12 0.09" />
+        </geometry>
+        <origin xyz="0 0.01 0.045" rpy="0 0 0" />
+      </collision>
+    </link>
+
+    <link name="${prefix}_mount" />
+
+    <joint name="${prefix}_base_joint" type="fixed">
+      <parent link="${parent_link}" />
+      <child link="${prefix}_base_link" />
+      <origin xyz="0 0 0" rpy="0 0 ${pan}" />
+      <xacro:insert_block name="origin" />
+    </joint>
+
+    <joint name="${prefix}_hinge_joint" type="fixed">
+      <parent link="${prefix}_base_link" />
+      <child link="${prefix}_hinge_link" />
+      <origin xyz="0 0 0.055" rpy="0 ${tilt} 0" />
+    </joint>
+
+    <joint name="${prefix}_mount_joint" type="fixed">
+      <parent link="${prefix}_hinge_link" />
+      <child link="${prefix}_mount" />
+      <origin xyz="0 0 0.058" rpy="0 0 0" />
+    </joint>
+  </xacro:macro>
+</robot>

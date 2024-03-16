@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+
+<!--
+This launch file logs in to the Jetson Orin and launches the ZED driver remotely.
+
+This is done so that the ROS master on the primary computer is guaranteed to be running before
+the Zed node starts up on the Jetson.
+
+-->
+
+<launch>
+  <machine
+    name="tor42-jetson"
+    address="tor42-jetson"
+    env-loader="/etc/ros/setup-remote.bash"
+    default="true"
+    user="administrator"
+  />
+
+  <include file="$(find tor42_ridgeback_bringup)/launch/zed2i.launch" />
+ 
+</launch>
