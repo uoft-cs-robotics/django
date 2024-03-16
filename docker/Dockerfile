@@ -79,6 +79,7 @@ RUN mkdir /root/atom_ws/src -p \
 COPY ./atom_src /root/atom_ws/src 
 
 RUN echo "Building atom_ws" \
+    && cd /root/atom_ws/src && https://github.com/Ruthrash/atom \
     && cd /root/atom_ws/src/atom \
     && pip3 install -r requirements.txt \     
     && sudo apt-get install -y  ros-noetic-ros-numpy qt5-default \ 
