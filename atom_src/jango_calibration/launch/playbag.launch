@@ -1,0 +1,87 @@
+<?xml version="1.0"?>
+<!--
+
+          █████╗ ████████╗ ██████╗ ███╗   ███╗
+         ██╔══██╗╚══██╔══╝██╔═══██╗████╗ ████║
+         ███████║   ██║   ██║   ██║██╔████╔██║
+         ██╔══██║   ██║   ██║   ██║██║╚██╔╝██║
+  __     ██║  ██║   ██║   ╚██████╔╝██║ ╚═╝ ██║    _
+ / _|    ╚═╝  ╚═╝   ╚═╝    ╚═════╝ ╚═╝     ╚═╝   | |
+ | |_ _ __ __ _ _ __ ___   _____      _____  _ __| | __
+ |  _| '__/ _` | '_ ` _ \ / _ \ \ /\ / / _ \| '__| |/ /
+ | | | | | (_| | | | | | |  __/\ V  V / (_) | |  |   <
+ |_| |_|  \__,_|_| |_| |_|\___| \_/\_/ \___/|_|  |_|\_\
+ https://github.com/lardemua/atom
+-->
+
+<!-- WARNING WARNING WARNING WARNING auto-generated file!! -->
+<!-- Only modify this file if you know what you are doing! -->
+
+<!--
+@file playbag.launch Plays back the bag file.
+    Sets up image decompressors if needed, reads the urdf robot description.
+
+@arg bag_file  Absolute path to the playing bag.
+    default: /root/bags/jango_1_2024-03-01-11-59-11.bag
+@arg bag_start Playback starting time (in seconds). default: 0.0
+@arg bag_rate  Playback rate. default: 1.0
+@arg use_tfs  Use tfs in the bag file or generate new ones using the urdf, joint state messages and the robot state publisher. default: False
+-->
+
+<launch>
+
+    <arg name="bag_file" default="/root/bags/jango_1_2024-03-01-11-59-11.bag"/>
+    <arg name="bag_start" default="0"/>
+    <arg name="bag_rate" default="1"/>
+    <arg name="optimized" default="false"/>
+    <arg name="rviz_file" default="$(find jango_calibration)/rviz/playbag.rviz"/>
+    <arg name="description_file" default="$(find jango_calibration)/urdf/initial_estimate.urdf.xacro"
+         unless="$(arg optimized)"/>
+    <arg name="description_file" default="$(find jango_calibration)/urdf/optimized.urdf.xacro"
+         if="$(arg optimized)"/>
+
+    <!-- %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% -->
+    <!-- Throttle topics -->
+    <node pkg="topic_tools" type="throttle" name="throttler_left_hand_camera"
+          args="messages /left_arm_camera/color/image_raw_to_throttle 10 /left_arm_camera/color/image_raw"/>
+    
+    <node pkg="topic_tools" type="throttle" name="throttler_right_hand_camera"
+          args="messages /right_arm_camera/color/image_raw_to_throttle 10 /right_arm_camera/color/image_raw"/>
+    
+    <node pkg="topic_tools" type="throttle" name="throttler_zed_left_camera"
+          args="messages /zed2i/zed_node/left_raw/image_raw_color/compressed_to_throttle 10 /zed2i/zed_node/left_raw/image_raw_color/compressed"/>
+    
+    <node pkg="topic_tools" type="throttle" name="throttler_zed_right_camera"
+          args="messages /zed2i/zed_node/right_raw/image_raw_color/compressed_to_throttle 10 /zed2i/zed_node/right_raw/image_raw_color/compressed"/>
+    
+    <node pkg="topic_tools" type="throttle" name="throttler_lidar"
+          args="messages /ouster/points_to_throttle 5 /ouster/points"/>
+    
+    <!-- %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% -->
+    <!-- Load robot description and tf generators -->
+    <param name="robot_description" command="$(find xacro)/xacro $(arg description_file)"/>
+
+    <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher"/>
+
+    <!-- %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% -->
+    <!-- Playback the bag file -->
+    <param name="/use_sim_time" value="true"/>
+
+    <!-- Play bag file using tfs, ignore joint states, do not collect ground truth  -->
+    <node pkg="rosbag" type="play" name="rosbag_play" output="screen"
+              args=" $(arg bag_file) --clock -r $(arg bag_rate) -l -s $(arg bag_start) -d 2 /joint_states:=/joint_states_null /left_arm_camera/color/image_raw:=/left_arm_camera/color/image_raw_to_throttle /right_arm_camera/color/image_raw:=/right_arm_camera/color/image_raw_to_throttle /zed2i/zed_node/left_raw/image_raw_color/compressed:=/zed2i/zed_node/left_raw/image_raw_color/compressed_to_throttle /zed2i/zed_node/right_raw/image_raw_color/compressed:=/zed2i/zed_node/right_raw/image_raw_color/compressed_to_throttle /ouster/points:=/ouster/points_to_throttle"/>
+    <!-- %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% -->
+
+    <!-- %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% -->
+    <!-- Image Topic Decompression -->
+    <node pkg="image_transport" type="republish" name="decompressor_zed_left_camera" output="screen"
+          args="compressed in:=/zed2i/zed_node/left_raw/image_raw_color raw out:=/zed2i/zed_node/left_raw/image_raw_color"/>
+    <node pkg="image_transport" type="republish" name="decompressor_zed_right_camera" output="screen"
+          args="compressed in:=/zed2i/zed_node/right_raw/image_raw_color raw out:=/zed2i/zed_node/right_raw/image_raw_color"/>
+    <!-- %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% -->
+    <!-- %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% -->
+    <!-- Visualization -->
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rviz_file)" required="true"/>
+    <!-- %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% -->
+
+</launch>
