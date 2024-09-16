@@ -1,13 +1,20 @@
-ARG image=ubuntu:20.04
-FROM ${image}
 
-ARG DEBIAN_FRONTEND=noninteractive
+# ARG image=ubuntu:20.04
+
+ARG image=nvidia/cudagl:11.1.1-devel-ubuntu20.04
+FROM ${image}
+ARG build_contactgraspnet=1
+
 ENV WS_DIR="/root"
 WORKDIR ${WS_DIR}
 
 SHELL ["/bin/bash", "-c"]
-# Dependencies for latency plot
-RUN apt-get update && apt-get upgrade -y && apt-get install -y \
+ARG DEBIAN_FRONTEND=noninteractive
+# RUN rm /etc/apt/sources.list.d/cuda.list 
+
+RUN apt-get update && apt-get upgrade -y 
+
+RUN apt-get update && apt-get upgrade -y && apt-get -qq -y install \
     curl \
     grep \
     build-essential \
@@ -22,7 +29,9 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y \
     gnome-terminal\
     nano\
     vim \
-    git
+    git \
+    sudo \
+    wget
 
 # Dependencies for Bash unit-tests
 RUN apt-get update && apt-get install -y \
@@ -78,23 +87,89 @@ RUN mkdir /root/atom_ws/src -p \
     && apt-get update && apt-get -y upgrade 
 COPY ./atom_src /root/atom_ws/src 
 
-RUN echo "Building atom_ws" \
-    && cd /root/atom_ws/src && https://github.com/Ruthrash/atom \
-    && cd /root/atom_ws/src/atom \
-    && pip3 install -r requirements.txt \     
-    && sudo apt-get install -y  ros-noetic-ros-numpy qt5-default \ 
-    && cd /root/atom_ws/src  && git clone https://github.com/miguelriemoliveira/rviz \ 
-    && source /opt/ros/noetic/setup.bash && cd /root/atom_ws && catkin_make  \ 
-    && echo "source /root/atom_ws/devel/setup.bash --extend" >> ~/.bashrc \ 
-    && cd /root/atom_ws/src/atom/atom_core \ 
-    && pip3 install -e .
 
-RUN cp /root/jango_ws/src/tor42_ridgeback/tor42_ridgeback_description/urdf/jango_new.urdf  /tmp/description.urdf
-RUN pip3 install numpy==1.21
-RUN pip3 install opencv-python==4.9.0.80 opencv-contrib-python==4.9.0.80
-RUN apt-get install -y ros-noetic-rviz-visual-tools  
+# Build and install Protobuf 
+RUN cd \
+    && mkdir git \
+    && cd git \ 
+    && wget https://github.com/protocolbuffers/protobuf/releases/download/v3.11.4/protobuf-all-3.11.4.zip \ 
+    && unzip protobuf-all-3.11.4.zip \ 
+    && cd protobuf-3.11.4 \ 
+    && ./configure \
+    && make -j$(nproc) \
+    && make check -j$(nproc) \ 
+    && sudo make install \ 
+    && sudo ldconfig \
+    && rm /root/git/protobuf-all-3.11.4.zip
+    
+RUN apt-get install -y \
+    ros-noetic-libfranka \
+    ros-noetic-franka-ros \
+    ros-noetic-franka-gripper \
+    ros-noetic-realsense2-camera
+RUN echo "cloning frankapy"
+RUN cd ~/git \ 
+    && git clone --recurse-submodules https://github.com/Ruthrash/frankapy 
+
+RUN echo "building frankapy python modules"
+RUN cd ~/git/frankapy \
+    && pip3 install empy==3.3.4 \
+    &&  pip3 install -e .
+
+RUN echo "compiling frankapy catkin_ws"
+RUN cd ~/git/frankapy \ 
+    && source /opt/ros/noetic/setup.bash \
+    && ./bash_scripts/make_catkin.sh
+
+RUN echo "compiling custom protobuf messages"
+RUN cd ~/git/frankapy \ 
+    && ./bash_scripts/make_proto.sh
+
+
+# RUN echo "Building atom_ws" \
+#     && cd /root/atom_ws/src && git clone https://github.com/Ruthrash/atom \
+#     && cd /root/atom_ws/src/atom \
+#     && pip3 install -r requirements.txt \     
+#     && sudo apt-get install -y  ros-noetic-ros-numpy qt5-default \ 
+#     && cd /root/atom_ws/src  && git clone https://github.com/miguelriemoliveira/rviz \ 
+#     && source /opt/ros/noetic/setup.bash && cd /root/atom_ws && catkin_make  \ 
+#     && echo "source /root/atom_ws/devel/setup.bash --extend" >> ~/.bashrc \ 
+#     && cd /root/atom_ws/src/atom/atom_core \ 
+#     && pip3 install -e .
+
+# RUN cp /root/jango_ws/src/tor42_ridgeback/tor42_ridgeback_description/urdf/jango_new.urdf  /tmp/description.urdf
+# RUN pip3 install numpy==1.21
+# RUN pip3 install opencv-python==4.9.0.80 opencv-contrib-python==4.9.0.80
+# RUN apt-get install -y ros-noetic-rviz-visual-tools  
 RUN chmod 777 -R /root/atom_ws/src && chmod 777 -R /root/jango_ws/src 
 
+RUN echo "Installing conda"
+ENV PATH /opt/conda/bin:$PATH
+RUN  export CONDA_DIR=/opt/conda \
+    && wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh  \
+    && /bin/bash ~/miniconda.sh -b -p /opt/conda \ 
+    && export PATH=$CONDA_DIR/bin:$PATH \ 
+    && source ~/.bashrc \
+    && conda config --set auto_activate_base false \ 
+    && conda init bash \ 
+    && conda install python=3.8
+
+RUN if [[ "x$build_contactgraspnet" == "x1" ]] ;\
+    then echo "build_contactgraspnet is set to TRUE" \
+    && echo "Building conda for contact_graspnet" \
+    && apt-get update && apt-get upgrade -y && apt-get install -y  freeglut3-dev\
+    && cd /root/git \ 
+    && git clone https://github.com/NVlabs/contact_graspnet \
+    && cd contact_graspnet\
+    && conda env create -f contact_graspnet_env.yml \
+    && source activate contact_graspnet_env\
+    && pip3 install open3d pyrealsense2\
+    && cd ~/git/frankapy \
+    # && pip install empy==3.3.4 \
+    && pip3 install -e . \
+    && conda deactivate\    
+    && conda deactivate; \     
+    fi
 
 
 ## atom dependancies

@@ -18,6 +18,7 @@ services:
     privileged: true
     devices:
     - /dev:/dev
+    runtime: nvidia    
     volumes:
       - ../jango_src:/root/jango_ws/src/
       - ../atom_src:/root/atom_ws/src/      
