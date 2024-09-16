@@ -11,7 +11,7 @@
 
 
 *.mtl
-*.dae
+
 *.mtl 
 *.obj 
 *.ply
